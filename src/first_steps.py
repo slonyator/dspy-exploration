@@ -7,6 +7,8 @@ from loguru import logger
 
 
 class InformationExtractor(Signature):
+    """Informations-Extraktion aus Schadenmeldungen"""
+
     text: str = InputField(desc="Text der Schadenmeldung")
     melder: Literal[
         "Versicherungsnehmer", "Aussendienst", "Anspruchsteller", "Sonstige"
