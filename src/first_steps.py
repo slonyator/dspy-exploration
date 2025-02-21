@@ -32,7 +32,7 @@ if __name__ == "__main__":
     sample_text = "Der Versicherungsnehmer meldet einen Schaden am 01.01.2023."
 
     information = Predict(InformationExtractor)
-    result = information(text=sample_text)
+    result = information(text=sample_text).toDict()
 
     logger.info("Prediction finished")
 
