@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.7
+    hooks:
+      - id: ruff
+        name: Ruff Format
+        entry: bash -c 'ruff format "$@" && for file in "$@"; do git add "$file"; done; exit 0'
+        pass_filenames: true
+        types: [python]
+      - id: ruff
+        name: Ruff Lint
+        entry: bash -c 'ruff check --fix "$@" && for file in "$@"; do git add "$file"; done; exit 0'
+        pass_filenames: true
+        types: [python]
