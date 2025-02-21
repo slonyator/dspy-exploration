@@ -2,8 +2,14 @@ import os
 
 from dotenv import load_dotenv
 from dspy import Signature, InputField, OutputField, Predict, settings, LM
-from typing import Literal
+from typing import Literal, Annotated
 from loguru import logger
+from pydantic import BeforeValidator
+
+
+def konfidenz_validator(value):
+    if not 0 <= value <= 1:
+        raise ValueError("Konfidenz muss zwischen 0 und 1 liegen")
 
 
 class InformationExtractor(Signature):
@@ -17,6 +23,9 @@ class InformationExtractor(Signature):
         desc="Zusammenfassung der Schadenmeldung"
     )
     schadendatum: str = OutputField(desc="Datum des Schadens")
+    konfidenz: Annotated[float, BeforeValidator(konfidenz_validator)] = (
+        OutputField(desc="Konfidenz der Vorhersage")
+    )
 
 
 if __name__ == "__main__":
