@@ -3,11 +3,13 @@ repos:
     hooks:
       - id: ruff-format
         name: Ruff Format
-        entry: ruff format
+        entry: bash -c 'ruff format "$@" && for file in "$@"; do git add "$file"; done'
         language: system
+        pass_filenames: true
         types: [python]
       - id: ruff-lint
         name: Ruff Lint
-        entry: ruff check --fix
+        entry: bash -c 'ruff check --fix "$@" && for file in "$@"; do git add "$file"; done'
         language: system
+        pass_filenames: true
         types: [python]
