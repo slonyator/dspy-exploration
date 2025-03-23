@@ -8,8 +8,11 @@ dependencies = [
     "dspy>=2.6.5",
     "loguru>=0.7.3",
     "openai>=1.63.2",
+    "pandas>=2.2.3",
     "pre-commit>=4.1.0",
     "pydantic>=2.10.6",
+    "pyprojroot>=0.3.0",
     "python-dotenv>=1.0.1",
     "ruff>=0.9.7",
+    "scikit-learn>=1.6.1",
 ]
