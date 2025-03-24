@@ -176,6 +176,8 @@ if __name__ == "__main__":
     )
     logger.info(f"CoT Schaden-Objekt accuracy: {objekt_accuracy}")
 
+    logger.info(lm.inspect_history(n=1))
+
     logger.info("Chain-of-Thought predictions for sd-typ-kennung")
     cot_typ_predictor = dspy.ChainOfThought(SdTypKennung)
     typ_predictions = [
@@ -252,5 +254,7 @@ if __name__ == "__main__":
     logger.info("Run the evaluation after compilation")
     eval_compiled = evaluate_program(compiled_predictor)
     logger.info(f"Evaluation Result: {eval_compiled}")
+
+    logger.info(lm.inspect_history(n=1))
 
     logger.success("Program finished successfully")
