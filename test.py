@@ -106,7 +106,8 @@ if __name__ == "__main__":
     logger.info("Loading data")
     df = shuffle(pd.read_csv(here("./df_sample.csv")), random_state=42)
 
-    logger.info("Selecting testset for zero-shot learning")
+    logger.info("Selecting train & test for zero-shot learning")
+    train = df.head(100)
     test = df.tail(20)
 
     logger.info("Loading OPENAI API KEY")
@@ -153,3 +154,40 @@ if __name__ == "__main__":
     )
 
     logger.info(f"SD-Typ-Kennung accuracy: {typ_accuracy}")
+
+    logger.info("Chain-of-Thought predictions for schaden-objekt")
+    cot_objekt_predictor = dspy.ChainOfThought(SchadenObjekt)
+    objekt_predictions = [
+        cot_objekt_predictor(text=text) for text in test["anonymized_text"]
+    ]
+
+    logger.info("Mapping predictions to abbreviations for object")
+    objekt_predictions = [
+        Mapper.get_object_abbreviation(pred.result)
+        for pred in objekt_predictions
+    ]
+
+    logger.info("Calculating accuracy for CoT Schaden-Objekt")
+    objekt_accuracy = accuracy_score(
+        test["schaden_objekt"], [pred for pred in objekt_predictions]
+    )
+
+    logger.info(f"CoT Schaden-Objekt accuracy: {objekt_accuracy}")
+
+    logger.info("Chain-of-Thought predictions for sd-typ-kennung")
+    cot_typ_predictor = dspy.ChainOfThought(SdTypKennung)
+    typ_predictions = [
+        cot_typ_predictor(text=text) for text in test["anonymized_text"]
+    ]
+
+    logger.info("Mapping predictions to abbreviations for typ")
+    typ_predictions = [
+        Mapper.get_typ_abbreviation(pred.result) for pred in typ_predictions
+    ]
+
+    logger.info("Calculating accuracy for CoT SD-Typ-Kennung")
+    typ_accuracy = accuracy_score(
+        test["sd_typ_kennung"], [pred for pred in typ_predictions]
+    )
+
+    logger.info(f"CoT SD-Typ-Kennung accuracy: {typ_accuracy}")
