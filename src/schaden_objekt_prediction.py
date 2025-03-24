@@ -110,7 +110,7 @@ def result_exact_match(example, prediction, trace=None):
 
 if __name__ == "__main__":
     logger.info("Loading data")
-    df = shuffle(pd.read_csv(here("./df_sample.csv")), random_state=42)
+    df = shuffle(pd.read_csv(here("../df_sample.csv")), random_state=42)
 
     logger.info("Selecting train & test for zero-shot learning")
     train = df.head(100)
