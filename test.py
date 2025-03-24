@@ -1,6 +1,8 @@
 import os
 
 from dotenv import load_dotenv
+from dspy.evaluate.metrics import answer_exact_match
+from dspy.evaluate import Evaluate
 from pyprojroot import here
 from loguru import logger
 from sklearn.metrics import accuracy_score
@@ -193,15 +195,61 @@ if __name__ == "__main__":
     logger.info(f"CoT SD-Typ-Kennung accuracy: {typ_accuracy}")
 
     logger.info("Starting with FS Prompt optimization for Schaden-Objekt")
+    # so_train = train.filter(["anonymized_text", "schaden_objekt"])
+    # so_test = test.filter(["anonymized_text", "schaden_objekt"])
+    #
+    # logger.info("Mapping labels to full names")
+    # so_train["schaden_objekt"] = so_train["schaden_objekt"].apply(Mapper.get_object_full_name)
+    # so_test["schaden_objekt"] = so_test["schaden_objekt"].apply(Mapper.get_object_full_name)
+    #
+    # trainset = [
+    #     dspy.Example(
+    #         question=x["anonymized_text"], answer=x["schaden_objekt"]
+    #     ).with_inputs("question")
+    #     for x in so_train.to_dict("records")
+    # ]
+    # testset = [
+    #     dspy.Example(
+    #         question=x["anonymized_text"], answer=x["schaden_objekt"]
+    #     ).with_inputs("question")
+    #     for x in so_test.to_dict("records")
+    # ]
+
+    so_train = train.filter(items=["anonymized_text", "schaden_objekt"])
+    so_test = test.filter(items=["anonymized_text", "schaden_objekt"])
+
+    logger.info("Mapping labels to full names")
+    so_train["schaden_objekt"] = so_train["schaden_objekt"].apply(
+        Mapper.get_object_full_name
+    )
+    so_test["schaden_objekt"] = so_test["schaden_objekt"].apply(
+        Mapper.get_object_full_name
+    )
+
     trainset = [
         dspy.Example(
-            question=x["anonymized_text"], answer=x["schaden_objekt"]
-        ).with_inputs("question")
-        for x in train.to_dict("records")
+            anonymized_text=x["anonymized_text"],
+            schaden_objekt=x["schaden_objekt"],
+        ).with_inputs("anonymized_text")
+        for x in so_train.to_dict("records")
     ]
     testset = [
         dspy.Example(
-            question=x["anonymized_text"], answer=x["schaden_objekt"]
-        ).with_inputs("question")
-        for x in test.to_dict("records")
+            anonymized_text=x["anonymized_text"],
+            schaden_objekt=x["schaden_objekt"],
+        ).with_inputs("anonymized_text")
+        for x in so_test.to_dict("records")
     ]
+
+    logger.info("Evaluating the dspy way")
+    evaluate_program = Evaluate(
+        devset=testset,
+        metric=answer_exact_match,
+        display_progress=True,
+        display_table=10,
+    )
+
+    eval = evaluate_program(cot_objekt_predictor)
+    print(eval)
+
+    logger.success("Program finished successfully")
