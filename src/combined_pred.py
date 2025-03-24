@@ -101,44 +101,6 @@ class BasisSchaden(BaseModel):
     )
 
 
-def is_valid_combination(typ: str, objekt: str) -> bool:
-    """
-    Map the full names to abbreviations and check if the combination is valid.
-    """
-    logger.info("Mapping schaden-objekt from full name to abbreviation")
-    objekt_abbr = Mapper.get_object_abbreviation(objekt)
-    logger.info(f"Mapped object: {objekt_abbr}")
-
-    logger.info("Mapping schaden-typ from full name to abbreviation")
-    typ_abbr = Mapper.get_typ_abbreviation(typ)
-    logger.info(f"Mapped type: {typ_abbr}")
-
-    valid_combinations = {
-        ("HR", "LW"),
-        ("HR", "ST"),
-        ("HR", "FE"),
-        ("HR", "EL"),
-        ("HR", "ED"),
-        ("HR", "GL"),
-        ("WG", "LW"),
-        ("WG", "ST"),
-        ("WG", "FE"),
-        ("WG", "EL"),
-        ("WG", "ED"),
-        ("WG", "GL"),
-        ("GL", "GL"),
-        ("KF", "VK"),
-        ("KF", "TK"),
-        ("KH", "KH"),
-        ("AH", "AH"),
-        ("AH", "HB"),
-        ("AH", "HY"),
-        ("AH", "BR"),
-    }
-
-    return (objekt_abbr, typ_abbr) in valid_combinations
-
-
 class FNOL(Signature):
     text: str = InputField(desc="Versicherungsschadenmeldung")
     result: BasisSchaden = OutputField(
@@ -150,14 +112,46 @@ def validate_combination(_args, pred) -> float:
     """
     Reward function for Refine.
     Returns 1.0 if the combination is valid, otherwise 0.0.
+    Maps the full names to abbreviations and checks if the combination is valid.
     """
     logger.info("Entering validation function")
     try:
         basis_schaden = pred.result
-        if is_valid_combination(basis_schaden.typ, basis_schaden.objekt):
-            return 1.0
-        else:
-            return 0.0
+        typ = basis_schaden.typ
+        objekt = basis_schaden.objekt
+
+        logger.info("Mapping schaden-objekt from full name to abbreviation")
+        objekt_abbr = Mapper.get_object_abbreviation(objekt)
+        logger.info(f"Mapped object: {objekt_abbr}")
+
+        logger.info("Mapping schaden-typ from full name to abbreviation")
+        typ_abbr = Mapper.get_typ_abbreviation(typ)
+        logger.info(f"Mapped type: {typ_abbr}")
+
+        valid_combinations = {
+            ("HR", "LW"),
+            ("HR", "ST"),
+            ("HR", "FE"),
+            ("HR", "EL"),
+            ("HR", "ED"),
+            ("HR", "GL"),
+            ("WG", "LW"),
+            ("WG", "ST"),
+            ("WG", "FE"),
+            ("WG", "EL"),
+            ("WG", "ED"),
+            ("WG", "GL"),
+            ("GL", "GL"),
+            ("KF", "VK"),
+            ("KF", "TK"),
+            ("KH", "KH"),
+            ("AH", "AH"),
+            ("AH", "HB"),
+            ("AH", "HY"),
+            ("AH", "BR"),
+        }
+
+        return 1.0 if (objekt_abbr, typ_abbr) in valid_combinations else 0.0
     except Exception as e:
         logger.error(f"Error during validation: {e}")
         return 0.0
