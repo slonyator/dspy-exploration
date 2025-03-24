@@ -101,7 +101,10 @@ class Mapper:
         return reverse_object_mapping.get(full_name, "Unknown")
 
 
-def result_exact_match(example, prediction):
+def result_exact_match(example, prediction, trace=None):
+    logger.info(
+        f"example: {example}, prediction: {prediction}, trace: {trace}"
+    )
     return example.result == prediction.result
 
 
@@ -232,13 +235,11 @@ if __name__ == "__main__":
         metric=result_exact_match, max_labeled_demos=10
     )
 
-    # Compile the predictor
     logger.info("Compiling predictor with few-shot learning")
     compiled_predictor = teleprompter.compile(
         cot_objekt_predictor, trainset=trainset
     )
 
-    # Set up evaluation
     logger.info("Evaluating compiled predictor on test set")
     evaluate_program = Evaluate(
         devset=testset,
@@ -248,8 +249,8 @@ if __name__ == "__main__":
         display_table=10,
     )
 
-    # Run evaluation
+    logger.info("Run the evaluation after compilation")
     eval_compiled = evaluate_program(compiled_predictor)
-    print(f"Evaluation Result: {eval_compiled}")
+    logger.info(f"Evaluation Result: {eval_compiled}")
 
     logger.success("Program finished successfully")
