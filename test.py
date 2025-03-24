@@ -1,21 +1,17 @@
 import os
-
 from dotenv import load_dotenv
-from dspy.evaluate.metrics import answer_exact_match
 from dspy.evaluate import Evaluate
 from pyprojroot import here
 from loguru import logger
 from sklearn.metrics import accuracy_score
 from sklearn.utils import shuffle
 from typing import Literal
-
 import dspy
 import pandas as pd
 
 
 class SchadenObjekt(dspy.Signature):
     text: str = dspy.InputField(desc="Versicherungsschadenmeldung")
-
     result: Literal[
         "Hausrat",
         "Wohngebäude",
@@ -33,7 +29,6 @@ class SchadenObjekt(dspy.Signature):
 
 class SdTypKennung(dspy.Signature):
     text: str = dspy.InputField(desc="Versicherungsschadenmeldung")
-
     result: Literal[
         "Teilkasko",
         "Vollkasko",
@@ -113,7 +108,6 @@ if __name__ == "__main__":
     test = df.tail(20)
 
     logger.info("Loading OPENAI API KEY")
-
     _ = load_dotenv()
 
     logger.info("Setting dspy model")
@@ -148,13 +142,11 @@ if __name__ == "__main__":
     objekt_accuracy = accuracy_score(
         test["schaden_objekt"], [pred for pred in objekt_predictions]
     )
-
     logger.info(f"Schaden-Objekt accuracy: {objekt_accuracy}")
 
     typ_accuracy = accuracy_score(
         test["sd_typ_kennung"], [pred for pred in typ_predictions]
     )
-
     logger.info(f"SD-Typ-Kennung accuracy: {typ_accuracy}")
 
     logger.info("Chain-of-Thought predictions for schaden-objekt")
@@ -173,7 +165,6 @@ if __name__ == "__main__":
     objekt_accuracy = accuracy_score(
         test["schaden_objekt"], [pred for pred in objekt_predictions]
     )
-
     logger.info(f"CoT Schaden-Objekt accuracy: {objekt_accuracy}")
 
     logger.info("Chain-of-Thought predictions for sd-typ-kennung")
@@ -191,30 +182,9 @@ if __name__ == "__main__":
     typ_accuracy = accuracy_score(
         test["sd_typ_kennung"], [pred for pred in typ_predictions]
     )
-
     logger.info(f"CoT SD-Typ-Kennung accuracy: {typ_accuracy}")
 
     logger.info("Starting with FS Prompt optimization for Schaden-Objekt")
-    # so_train = train.filter(["anonymized_text", "schaden_objekt"])
-    # so_test = test.filter(["anonymized_text", "schaden_objekt"])
-    #
-    # logger.info("Mapping labels to full names")
-    # so_train["schaden_objekt"] = so_train["schaden_objekt"].apply(Mapper.get_object_full_name)
-    # so_test["schaden_objekt"] = so_test["schaden_objekt"].apply(Mapper.get_object_full_name)
-    #
-    # trainset = [
-    #     dspy.Example(
-    #         question=x["anonymized_text"], answer=x["schaden_objekt"]
-    #     ).with_inputs("question")
-    #     for x in so_train.to_dict("records")
-    # ]
-    # testset = [
-    #     dspy.Example(
-    #         question=x["anonymized_text"], answer=x["schaden_objekt"]
-    #     ).with_inputs("question")
-    #     for x in so_test.to_dict("records")
-    # ]
-
     so_train = train.filter(items=["anonymized_text", "schaden_objekt"])
     so_test = test.filter(items=["anonymized_text", "schaden_objekt"])
 
@@ -228,23 +198,25 @@ if __name__ == "__main__":
 
     trainset = [
         dspy.Example(
-            anonymized_text=x["anonymized_text"],
-            schaden_objekt=x["schaden_objekt"],
-        ).with_inputs("anonymized_text")
+            text=x["anonymized_text"], result=x["schaden_objekt"]
+        ).with_inputs("text")
         for x in so_train.to_dict("records")
     ]
     testset = [
         dspy.Example(
-            anonymized_text=x["anonymized_text"],
-            schaden_objekt=x["schaden_objekt"],
-        ).with_inputs("anonymized_text")
+            text=x["anonymized_text"], result=x["schaden_objekt"]
+        ).with_inputs("text")
         for x in so_test.to_dict("records")
     ]
 
     logger.info("Evaluating the dspy way")
+
+    def result_exact_match(example, prediction):
+        return example.result == prediction.result
+
     evaluate_program = Evaluate(
         devset=testset,
-        metric=answer_exact_match,
+        metric=result_exact_match,
         display_progress=True,
         display_table=10,
     )
