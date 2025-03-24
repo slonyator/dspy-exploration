@@ -191,3 +191,17 @@ if __name__ == "__main__":
     )
 
     logger.info(f"CoT SD-Typ-Kennung accuracy: {typ_accuracy}")
+
+    logger.info("Starting with FS Prompt optimization for Schaden-Objekt")
+    trainset = [
+        dspy.Example(
+            question=x["anonymized_text"], answer=x["schaden_objekt"]
+        ).with_inputs("question")
+        for x in train.to_dict("records")
+    ]
+    testset = [
+        dspy.Example(
+            question=x["anonymized_text"], answer=x["schaden_objekt"]
+        ).with_inputs("question")
+        for x in test.to_dict("records")
+    ]
