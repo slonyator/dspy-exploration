@@ -126,3 +126,9 @@ if __name__ == "__main__":
     typ_predictions = [
         zero_shot_typ_predictor(text=text) for text in test["anonymized_text"]
     ]
+
+    logger.info("Mapping predictions to abbreviations for object")
+    objekt_predictions = [Mapper.get_object_abbreviation(pred.result) for pred in objekt_predictions]
+
+    logger.info("Mapping predictions to abbreviations for typ")
+    typ_predictions = [Mapper.get_typ_abbreviation(pred.result) for pred in typ_predictions]
