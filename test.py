@@ -1,13 +1,15 @@
 import os
-from dotenv import load_dotenv
-from dspy.evaluate import Evaluate
-from pyprojroot import here
-from loguru import logger
-from sklearn.metrics import accuracy_score
-from sklearn.utils import shuffle
 from typing import Literal
+
 import dspy
 import pandas as pd
+from dotenv import load_dotenv
+from dspy.evaluate import Evaluate
+from dspy.teleprompt.bootstrap import BootstrapFewShot
+from loguru import logger
+from pyprojroot import here
+from sklearn.metrics import accuracy_score
+from sklearn.utils import shuffle
 
 
 class SchadenObjekt(dspy.Signature):
@@ -97,6 +99,10 @@ class Mapper:
     def get_object_abbreviation(cls, full_name):
         reverse_object_mapping = {v: k for k, v in cls.object_mapping.items()}
         return reverse_object_mapping.get(full_name, "Unknown")
+
+
+def result_exact_match(example, prediction):
+    return example.result == prediction.result
 
 
 if __name__ == "__main__":
@@ -211,9 +217,6 @@ if __name__ == "__main__":
 
     logger.info("Evaluating the dspy way")
 
-    def result_exact_match(example, prediction):
-        return example.result == prediction.result
-
     evaluate_program = Evaluate(
         devset=testset,
         metric=result_exact_match,
@@ -222,6 +225,31 @@ if __name__ == "__main__":
     )
 
     eval = evaluate_program(cot_objekt_predictor)
-    print(eval)
+    logger.info(f"Evaluation results: {eval}")
+
+    logger.info("Setting up BootstrapFewShot teleprompter")
+    teleprompter = BootstrapFewShot(
+        metric=result_exact_match, max_labeled_demos=10
+    )
+
+    # Compile the predictor
+    logger.info("Compiling predictor with few-shot learning")
+    compiled_predictor = teleprompter.compile(
+        cot_objekt_predictor, trainset=trainset
+    )
+
+    # Set up evaluation
+    logger.info("Evaluating compiled predictor on test set")
+    evaluate_program = Evaluate(
+        devset=testset,
+        metric=result_exact_match,
+        num_threads=8,
+        display_progress=True,
+        display_table=10,
+    )
+
+    # Run evaluation
+    eval_compiled = evaluate_program(compiled_predictor)
+    print(f"Evaluation Result: {eval_compiled}")
 
     logger.success("Program finished successfully")
