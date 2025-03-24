@@ -10,10 +10,28 @@ import dspy
 import pandas as pd
 
 
-class ClassifyText(dspy.Signature):
+class SchadenObjekt(dspy.Signature):
     text: str = dspy.InputField(desc="Versicherungsschadenmeldung")
 
-    type: Literal[
+    result: Literal[
+        "Hausrat",
+        "Wohngebäude",
+        "Kasko",
+        "Kraftfahrthaftpflicht",
+        "Allgemeine Haftpflicht",
+        "Glass",
+        "Sonstiges",
+    ] = dspy.OutputField(
+        desc="Wähle die Kategorie, die am besten zum beschädigten Objekt "
+        "basierend auf dem bereitgestellten Dokument passt. Wähle "
+        "'Sonstiges', falls keine der anderen Kategorien passt."
+    )
+
+
+class SdTypKennung(dspy.Signature):
+    text: str = dspy.InputField(desc="Versicherungsschadenmeldung")
+
+    result: Literal[
         "Teilkasko",
         "Vollkasko",
         "Glass",
@@ -35,19 +53,7 @@ class ClassifyText(dspy.Signature):
         "zugeordnet werden kann."
     )
 
-    object: Literal[
-        "Hausrat",
-        "Wohngebäude",
-        "Kasko",
-        "Kraftfahrthaftpflicht",
-        "Allgemeine Haftpflicht",
-        "Glass",
-        "Sonstiges",
-    ] = dspy.OutputField(
-        desc="Wähle die Kategorie, die am besten zum beschädigten Objekt "
-        "basierend auf dem bereitgestellten Dokument passt. Wähle "
-        "'Sonstiges', falls keine der anderen Kategorien passt."
-    )
+
 if __name__ == "__main__":
     logger.info("Loading data")
     df = shuffle(pd.read_csv(here("./df_sample.csv")), random_state=42)
@@ -63,9 +69,15 @@ if __name__ == "__main__":
     lm = dspy.LM("openai/gpt-4o-mini", api_key=os.environ["OPENAI_API_KEY"])
     dspy.configure(lm=lm)
 
-    logger.info("Zero-shot predictions")
-    zero_shot_predictor = dspy.Predict(ClassifyText)
+    logger.info("Zero-shot predictions for SchadenObjekt")
+    zero_shot_objekt_predictor = dspy.Predict(SchadenObjekt)
+    objekt_predictions = [
+        zero_shot_objekt_predictor(text=text)
+        for text in test["anonymized_text"]
+    ]
 
-    predictions = [
-        zero_shot_predictor(text=text) for text in test["anonymized_text"]
+    logger.info("Zero-shot predictions for SdTypKennung")
+    zero_shot_typ_predictor = dspy.Predict(SdTypKennung)
+    typ_predictions = [
+        zero_shot_typ_predictor(text=text) for text in test["anonymized_text"]
     ]
