@@ -130,21 +130,10 @@ if __name__ == "__main__":
         for text in test["anonymized_text"]
     ]
 
-    logger.info("Zero-shot predictions for sd-typ-kennung")
-    zero_shot_typ_predictor = dspy.Predict(SdTypKennung)
-    typ_predictions = [
-        zero_shot_typ_predictor(text=text) for text in test["anonymized_text"]
-    ]
-
     logger.info("Mapping predictions to abbreviations for object")
     objekt_predictions = [
         Mapper.get_object_abbreviation(pred.result)
         for pred in objekt_predictions
-    ]
-
-    logger.info("Mapping predictions to abbreviations for typ")
-    typ_predictions = [
-        Mapper.get_typ_abbreviation(pred.result) for pred in typ_predictions
     ]
 
     logger.info("Calculating accuracy")
@@ -152,11 +141,6 @@ if __name__ == "__main__":
         test["schaden_objekt"], [pred for pred in objekt_predictions]
     )
     logger.info(f"Schaden-Objekt accuracy: {objekt_accuracy}")
-
-    typ_accuracy = accuracy_score(
-        test["sd_typ_kennung"], [pred for pred in typ_predictions]
-    )
-    logger.info(f"SD-Typ-Kennung accuracy: {typ_accuracy}")
 
     logger.info("Chain-of-Thought predictions for schaden-objekt")
     cot_objekt_predictor = dspy.ChainOfThought(SchadenObjekt)
@@ -177,23 +161,6 @@ if __name__ == "__main__":
     logger.info(f"CoT Schaden-Objekt accuracy: {objekt_accuracy}")
 
     logger.info(lm.inspect_history(n=1))
-
-    logger.info("Chain-of-Thought predictions for sd-typ-kennung")
-    cot_typ_predictor = dspy.ChainOfThought(SdTypKennung)
-    typ_predictions = [
-        cot_typ_predictor(text=text) for text in test["anonymized_text"]
-    ]
-
-    logger.info("Mapping predictions to abbreviations for typ")
-    typ_predictions = [
-        Mapper.get_typ_abbreviation(pred.result) for pred in typ_predictions
-    ]
-
-    logger.info("Calculating accuracy for CoT SD-Typ-Kennung")
-    typ_accuracy = accuracy_score(
-        test["sd_typ_kennung"], [pred for pred in typ_predictions]
-    )
-    logger.info(f"CoT SD-Typ-Kennung accuracy: {typ_accuracy}")
 
     logger.info("Starting with FS Prompt optimization for Schaden-Objekt")
     so_train = train.filter(items=["anonymized_text", "schaden_objekt"])
