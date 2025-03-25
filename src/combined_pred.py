@@ -4,6 +4,7 @@ from typing import Literal
 from dotenv import load_dotenv
 from dspy import (
     Example,
+    Evaluate,
     Signature,
     InputField,
     OutputField,
@@ -162,6 +163,13 @@ def validate_combination(_args, pred) -> float:
         return 0.0
 
 
+def result_exact_match(example, prediction, trace=None):
+    logger.info(
+        f"example: {example}, prediction: {prediction}, trace: {trace}"
+    )
+    return example.result == prediction.result
+
+
 if __name__ == "__main__":
     logger.info("Loading OPENAI API KEY")
     _ = load_dotenv()
@@ -213,3 +221,15 @@ if __name__ == "__main__":
         ).with_inputs("text")
         for x in df.tail(200).to_dict("records")
     ]
+
+    logger.info("Evaluation with Zero-Shot-Predictions")
+
+    evaluate_program = Evaluate(
+        devset=testset,
+        metric=result_exact_match,
+        display_progress=True,
+        display_table=10,
+    )
+
+    eval = evaluate_program(predictor)
+    logger.info(f"Evaluation results: {eval}")
