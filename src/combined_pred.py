@@ -3,6 +3,7 @@ from typing import Literal
 
 from dotenv import load_dotenv
 from dspy import (
+    Example,
     Signature,
     InputField,
     OutputField,
@@ -13,6 +14,10 @@ from dspy import (
 from dspy.predict.refine import Refine
 from loguru import logger
 from pydantic import BaseModel, Field
+from pyprojroot import here
+from sklearn.utils import shuffle
+
+import pandas as pd
 
 
 class Mapper:
@@ -179,3 +184,32 @@ if __name__ == "__main__":
 
     result = predictor(text=sample_text)
     logger.info(f"Final result: {result}")
+
+    logger.info("Loading the full dataset")
+    df = shuffle(
+        pd.read_csv(here("./df_sample.csv")).filter(
+            ["anonymized_text", "schaden_objekt", "sd_typ_kennung"]
+        ),
+        random_state=42,
+    )
+
+    trainset = [
+        Example(
+            text=x["anonymized_text"],
+            result=BasisSchaden(
+                typ=Mapper.get_typ_full_name(x["sd_typ_kennung"]),
+                objekt=Mapper.get_object_full_name(x["schaden_objekt"]),
+            ),
+        ).with_inputs("text")
+        for x in df.head(100).to_dict("records")
+    ]
+    testset = [
+        Example(
+            text=x["anonymized_text"],
+            result=BasisSchaden(
+                typ=Mapper.get_typ_full_name(x["sd_typ_kennung"]),
+                objekt=Mapper.get_object_full_name(x["schaden_objekt"]),
+            ),
+        ).with_inputs("text")
+        for x in df.tail(200).to_dict("records")
+    ]
