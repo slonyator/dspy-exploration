@@ -3,6 +3,7 @@ from typing import Literal
 
 from dotenv import load_dotenv
 from dspy import (
+    BootstrapFewShot,
     Example,
     Evaluate,
     Signature,
@@ -233,3 +234,24 @@ if __name__ == "__main__":
 
     eval = evaluate_program(predictor)
     logger.info(f"Evaluation results: {eval}")
+
+    logger.info("Setting up BootstrapFewShot teleprompter")
+    teleprompter = BootstrapFewShot(
+        metric=result_exact_match, max_labeled_demos=10
+    )
+
+    logger.info("Compiling predictor with few-shot learning")
+    compiled_predictor = teleprompter.compile(predictor, trainset=trainset)
+
+    logger.info("Evaluating compiled predictor on test set")
+    evaluate_program = Evaluate(
+        devset=testset,
+        metric=result_exact_match,
+        num_threads=1,
+        display_progress=True,
+        display_table=10,
+    )
+
+    logger.info("Run the evaluation after compilation")
+    eval_compiled = evaluate_program(compiled_predictor)
+    logger.info(f"Evaluation Result: {eval_compiled}")
