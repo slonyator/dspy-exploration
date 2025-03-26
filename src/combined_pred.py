@@ -1,6 +1,7 @@
 import os
 from typing import Literal
 
+import pandas as pd
 from dotenv import load_dotenv
 from dspy import (
     BootstrapFewShot,
@@ -13,13 +14,10 @@ from dspy import (
     LM,
     configure,
 )
-from dspy.predict.refine import Refine
 from loguru import logger
 from pydantic import BaseModel, Field
 from pyprojroot import here
 from sklearn.utils import shuffle
-
-import pandas as pd
 
 
 class Mapper:
@@ -176,21 +174,41 @@ if __name__ == "__main__":
     _ = load_dotenv()
 
     logger.info("Setting dspy model")
-    lm = LM("openai/gpt-4o-mini", api_key=os.environ["OPENAI_API_KEY"])
-    configure(lm=lm)
-
-    predictor = Refine(
-        module=Predict(FNOL),
-        N=2,
-        reward_fn=validate_combination,
-        threshold=1.0,
+    lm = LM(
+        model="openai/gpt-4o-mini",
+        api_key=os.environ["OPENAI_API_KEY"],
+        temperature=0,
+        max_tokens=1000,
     )
+    configure(lm=lm)
+    lm(
+        messages=[
+            {
+                "role": "system",
+                "content": "Du bist ein Assisstent in der Schadenbearbeitung "
+                "einer großen Versicherung. Ein Kunde hat einen "
+                "Schaden gemeldet und du sollst die Schadenmeldung "
+                "kategorisieren. Bitte gib die Kategorie des "
+                "Schadens und des beschädigten Objekts an.",
+            }
+        ],
+    )
+
+    # refined_predictor = Refine(
+    #     module=Predict(FNOL),
+    #     N=2,
+    #     reward_fn=validate_combination,
+    #     threshold=1.0,
+    # )
+
+    predictor = Predict(FNOL)
 
     sample_text = (
         "Der Versicherungsnehmer meldet einen Schaden am 01.01.2023. "
         "Ihm wurde sein Fahrrad gestohlen."
     )
 
+    # result = refined_predictor(text=sample_text)
     result = predictor(text=sample_text)
     logger.info(f"Final result: {result}")
 
@@ -229,11 +247,13 @@ if __name__ == "__main__":
         devset=testset,
         metric=result_exact_match,
         display_progress=True,
-        display_table=10,
+        display_table=5,
     )
 
+    # eval = evaluate_program(refined_predictor)
     eval = evaluate_program(predictor)
     logger.info(f"Evaluation results: {eval}")
+    logger.info(f"Prompt: {lm.inspect_history(n=1)}")
 
     logger.info("Setting up BootstrapFewShot teleprompter")
     teleprompter = BootstrapFewShot(
@@ -241,6 +261,7 @@ if __name__ == "__main__":
     )
 
     logger.info("Compiling predictor with few-shot learning")
+    # compiled_predictor = teleprompter.compile(refined_predictor, trainset=trainset)
     compiled_predictor = teleprompter.compile(predictor, trainset=trainset)
 
     logger.info("Evaluating compiled predictor on test set")
@@ -249,9 +270,17 @@ if __name__ == "__main__":
         metric=result_exact_match,
         num_threads=1,
         display_progress=True,
-        display_table=10,
+        display_table=5,
     )
 
     logger.info("Run the evaluation after compilation")
+    # eval_compiled = evaluate_program(compiled_predictor)
+    # logger.info(f"Evaluation Result: {eval_compiled}")
     eval_compiled = evaluate_program(compiled_predictor)
     logger.info(f"Evaluation Result: {eval_compiled}")
+    logger.info(f"Prompt: {lm.inspect_history(n=1)}")
+
+    logger.info(f"Old performance: {eval}")
+    logger.info(f"New performance: {eval_compiled}")
+
+    logger.success("Program finished successfully")

@@ -1,0 +1,33 @@
+{
+  Input:
+    - text (str): Versicherungsschadenmeldung
+
+  Output:
+    - result (BasisSchaden): Kategorisierung des Schadens und des beschädigten Objekts.
+      Note: The output must adhere to the following JSON schema:
+      {
+          "type": "object",
+          "properties": {
+              "objekt": {
+                  "type": "string",
+                  "description": "Wähle die Kategorie, die am besten zum beschädigten Objekt basierend auf dem bereitgestellten Dokument passt. Wähle 'Sonstiges', falls keine der anderen Kategorien passt.",
+                  "enum": ["Hausrat", "Wohngebäude", "Kasko", "Kraftfahrthaftpflicht", "Allgemeine Haftpflicht", "Glass", "Sonstiges"],
+                  "title": "Objekt"
+              },
+              "typ": {
+                  "type": "string",
+                  "description": "Wähle die Kategorie, die am besten zum Schaden basierend auf dem bereitgestellten Dokument passt. Wähle 'Sonstiges' nur dann, falls der Schaden keiner der anderen Kategorien zugeordnet werden kann.",
+                  "enum": ["Teilkasko", "Vollkasko", "Glass", "Einbruch / Diebstahl", "Elementar", "Feuer", "Leitungswasser", "Sturm", "Allgemeine Haftpflicht", "Haeuslicher Bereich", "Handyschaden", "Brillenschaden", "Kraftfahrthaftpflicht", "Sonstiges"],
+                  "title": "Typ"
+              }
+          },
+          "required": ["typ", "objekt"],
+          "title": "BasisSchaden"
+      }
+}
+
+[[ ## text ## ]]
+{{ text }}
+[[ ## result ## ]]
+{{ result }}
+[[ ## completed ## ]]
