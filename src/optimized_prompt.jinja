@@ -1,0 +1,142 @@
+{
+  Extended prompt Jinja template for Versicherungsschadenmeldung
+
+  Input:
+    - text (str): Versicherungsschadenmeldung
+  Output:
+    - result (BasisSchaden): Kategorisierung des Schadens und des beschädigten Objekts
+      Note: The value produced must adhere to the JSON schema:
+      {
+          "type": "object",
+          "properties": {
+              "objekt": {
+                  "type": "string",
+                  "description": "Wähle die Kategorie, die am besten zum beschädigten Objekt basierend auf dem bereitgestellten Dokument passt. Wähle 'Sonstiges', falls keine der anderen Kategorien passt.",
+                  "enum": ["Hausrat", "Wohngebäude", "Kasko", "Kraftfahrthaftpflicht", "Allgemeine Haftpflicht", "Glass", "Sonstiges"],
+                  "title": "Objekt"
+              },
+              "typ": {
+                  "type": "string",
+                  "description": "Wähle die Kategorie, die am besten zum Schaden basierend auf dem bereitgestellten Dokument passt. Wähle 'Sonstiges' nur dann, falls der Schaden keiner der anderen Kategorien zugeordnet werden kann.",
+                  "enum": ["Teilkasko", "Vollkasko", "Glass", "Einbruch / Diebstahl", "Elementar", "Feuer", "Leitungswasser", "Sturm", "Allgemeine Haftpflicht", "Haeuslicher Bereich", "Handyschaden", "Brillenschaden", "Kraftfahrthaftpflicht", "Sonstiges"],
+                  "title": "Typ"
+              }
+          },
+          "required": ["typ", "objekt"],
+          "title": "BasisSchaden"
+      }
+}
+
+System message:
+Your input fields are:
+1. `text` (str): Versicherungsschadenmeldung
+Your output fields are:
+1. `result` (BasisSchaden): Kategorisierung des Schadens und des beschädigten Objekts
+All interactions will be structured in the following way, with the appropriate values filled in.
+[[ ## text ## ]]
+{{ text }}
+[[ ## result ## ]]
+{{ result }}        # note: the value you produce must adhere to the JSON schema: {"type": "object", "properties": {"objekt": {"type": "string", "description": "Wähle die Kategorie, die am besten zum beschädigten Objekt basierend auf dem bereitgestellten Dokument passt. Wähle 'Sonstiges', falls keine der anderen Kategorien passt.", "enum": ["Hausrat", "Wohngebäude", "Kasko", "Kraftfahrthaftpflicht", "Allgemeine Haftpflicht", "Glass", "Sonstiges"], "title": "Objekt"}, "typ": {"type": "string", "description": "Wähle die Kategorie, die am besten zum Schaden basierend auf dem bereitgestellten Dokument passt. Wähle 'Sonstiges' nur dann, falls der Schaden keiner der anderen Kategorien zugeordnet werden kann.", "enum": ["Teilkasko", "Vollkasko", "Glass", "Einbruch / Diebstahl", "Elementar", "Feuer", "Leitungswasser", "Sturm", "Allgemeine Haftpflicht", "Haeuslicher Bereich", "Handyschaden", "Brillenschaden", "Kraftfahrthaftpflicht", "Sonstiges"], "title": "Typ"}}, "required": ["typ", "objekt"], "title": "BasisSchaden"}
+[[ ## completed ## ]]
+In adhering to this structure, your objective is:
+        Given the fields `text`, produce the fields `result`.
+
+User message:
+[[ ## text ## ]]
+Das geschädigte Fahrzeug, ein BMW 118i mit dem Kennzeichen [Entfernt], war seit Donnerstag, 02.02.2023, ordnungsgemäß am Straßenrand in Musterstadt (für 'Hattersheim') geparkt. Am Samstag, den 04.02.2023, wurde Schaden am Heck des Fahrzeugs festgestellt, der vermutlich von einem anderen Fahrzeug verursacht wurde, das den BMW beim Befahren der Straße gestreift hatte, ohne dies zu bemerken. Der Schaden wurde der Polizei gemeldet, die zur Unfallaufnahme erschien. Es gibt keine Zeugen für den Vorfall. Die Geschädigte ist Erika Mustermann (für 'Magdalena Gorczynska'), die den Schaden über ihre Versicherungsnummer [Entfernt] meldete.
+Respond with the corresponding output fields, starting with the field `[[ ## result ## ]]` (must be formatted as a valid Python BasisSchaden), and then ending with the marker for `[[ ## completed ## ]]`.
+
+Assistant message:
+[[ ## result ## ]]
+{"typ": "Kraftfahrthaftpflicht", "objekt": "Kraftfahrthaftpflicht"}
+[[ ## completed ## ]]
+
+User message:
+[[ ## text ## ]]
+Schadenfall zur KFZ-Versicherung Nr. 2176063188, Art des Schadens: TK-Hagel. Der Schaden ereignete sich am 26.08.23 in Musterstadt (für 'Gmund am Tegernsee'). Der Versicherungsnehmer ist Max Mustermann (für 'Elke Bauernbeck') aus Musterstadt_2 (für 'München'). Als Anlage wurden eine Schadenanzeige, Rechnung, Fotos, Gutachten und ein Kostenvoranschlag übermittelt. Es wird um Kenntnisnahme, Schadenanlage, Mitteilung der Schadennummer, Prüfung und direkte Regulierung an den Versicherungsnehmer gebeten.
+Respond with the corresponding output fields, starting with the field `[[ ## result ## ]]` (must be formatted as a valid Python BasisSchaden), and then ending with the marker for `[[ ## completed ## ]]`.
+
+Assistant message:
+[[ ## result ## ]]
+{"typ": "Teilkasko", "objekt": "Kasko"}
+[[ ## completed ## ]]
+
+User message:
+[[ ## text ## ]]
+Zusammenfassung des Schadens:
+- Beschädigtes Objekt: Rohrbruch in einem Wohngebäude
+- Schadenhergang: Rohrbruch, der bereits repariert wurde
+- Melder: Max Mustermann im Auftrag des Versicherungsnehmers
+- Beteiligte: Versicherungsnehmer (Person_1), Musterfirma GmbH
+- Schadensdatum: 08.03.2023
+Respond with the corresponding output fields, starting with the field `[[ ## result ## ]]` (must be formatted as a valid Python BasisSchaden), and then ending with the marker for `[[ ## completed ## ]]`.
+
+Assistant message:
+[[ ## result ## ]]
+{"typ": "Leitungswasser", "objekt": "Wohngebäude"}
+[[ ## completed ## ]]
+
+User message:
+[[ ## text ## ]]
+Der Kunde Max Mustermann meldet einen Glasbruch an einem Dachfenster in seinem Wohngebäude mit einer Wohnung. Der Schaden ereignete sich am 03.01.2023 um 18 Uhr im Ankleidezimmer. Die Reparatur wird auf 1.716,10 Euro geschätzt. Der Versicherungsnehmer ist nicht vorsteuerabzugsberechtigt.
+Respond with the corresponding output fields, starting with the field `[[ ## result ## ]]` (must be formatted as a valid Python BasisSchaden), and then ending with the marker for `[[ ## completed ## ]]`.
+
+Assistant message:
+[[ ## result ## ]]
+{"typ": "Glass", "objekt": "Wohngebäude"}
+[[ ## completed ## ]]
+
+User message:
+[[ ## text ## ]]
+Zusammenfassung des Schadens:
+- Beschädigtes Objekt: Segelboot "Boot_1"
+- Schadenhergang: Bei einem Anlegemanöver wurde das Segelboot "Boot_2" gegen das Segelboot "Boot_1" gedrückt. An der "Boot_2" wurden keine Schäden festgestellt, aber an der "Boot_1" gab es eine beschädigte Scheuerleiste, ein Fender hat sich im Anker verhakt und eine Relingstütze wurde beschädigt.
+- Melder: Max Mustermann, Charterkunde des Bootes "Boot_2"
+- Beteiligte: Max Mustermann, Besitzer des Bootes "Boot_2"; Erika Mustermann, Besitzer des Bootes "Boot_1"
+- Schadensdatum: 01.06.2023
+Respond with the corresponding output fields, starting with the field `[[ ## result ## ]]` (must be formatted as a valid Python BasisSchaden), and then ending with the marker for `[[ ## completed ## ]]`.
+
+Assistant message:
+[[ ## result ## ]]
+{"typ": "Allgemeine Haftpflicht", "objekt": "Allgemeine Haftpflicht"}
+[[ ## completed ## ]]
+
+User message:
+[[ ## text ## ]]
+Zusammenfassung des Schadens:
+- Beschädigtes Objekt: Wohngebäude, Dachgeschoss Bad
+- Schadenhergang: Bruch der Wasserleitung unter der Dusche im Dachgeschoss, starker Schimmelpilzbefall
+- Melder: Max Mustermann - Trocknung & Sanierung
+- Beteiligte: Musterfirma GmbH
+- Schadensdatum: 30.12.2022
+Respond with the corresponding output fields, starting with the field `[[ ## result ## ]]` (must be formatted as a valid Python BasisSchaden), and then ending with the marker for `[[ ## completed ## ]]`.
+
+Assistant message:
+[[ ## result ## ]]
+{"typ": "Leitungswasser", "objekt": "Wohngebäude"}
+[[ ## completed ## ]]
+
+User message:
+[[ ## text ## ]]
+Beschädigtes Objekt: Stromleitung in der Wohnung der Versicherungsnehmerin Max Mustermann. Schadenhergang: Beim Anbringen einer Halterung an der Wand hat die Versicherungsnehmerin eine Stromleitung angebohrt. Melder: Max Mustermann. Beteiligte: Max Mustermann, Elektriker. Schadensdatum: 12.10.2023.
+Respond with the corresponding output fields, starting with the field `[[ ## result ## ]]` (must be formatted as a valid Python BasisSchaden), and then ending with the marker for `[[ ## completed ## ]]`.
+
+Assistant message:
+[[ ## result ## ]]
+{"typ": "Haeuslicher Bereich", "objekt": "Allgemeine Haftpflicht"}
+[[ ## completed ## ]]
+
+User message:
+[[ ## text ## ]]
+Zusammenfassung des Schadens:
+- Beschädigtes Objekt: Fahrzeug der Musterfirma GmbH
+- Schadenhergang: Unachtsamkeit des Fahrers des bei der Generali Versicherung AG versicherten Fahrzeugs mit dem amtlichen Kennzeichen [Entfernt], der gegen den ordnungsgemäß geparkten PKW der Musterfirma GmbH mit dem amtlichen Kennzeichen [Entfernt] fuhr.
+- Melder: Institution_1, die die Musterfirma GmbH vertritt.
+- Beteiligte: Fahrer des Generali-versicherten Fahrzeugs, Musterfirma GmbH.
+- Schadensdatum: 25.10.2023
+Respond with the corresponding output fields, starting with the field `[[ ## result ## ]]` (must be formatted as a valid Python BasisSchaden), and then ending with the marker for `[[ ## completed ## ]]`.
+
+Assistant message:
+[[ ## result ## ]]
+{"typ": "Kraftfahrthaftpflicht", "objekt": "Kraftfahrthaftpflicht"}
+[[ ## completed ## ]]

@@ -1,4 +1,4 @@
-from typing import Literal, Any
+from typing import Literal, Any, Dict
 
 import instructor
 import pandas as pd
@@ -121,10 +121,7 @@ class BasisSchaden(BaseModel):
         "Sonstiges",
     ] = Field(
         ...,
-        description="Wähle die Kategorie, die am besten zum Schaden basierend auf "
-        "dem bereitgestellten Dokument passt. Wähle 'Sonstiges' nur "
-        "dann, falls der Schaden keiner der anderen Kategorien "
-        "zugeordnet werden kann.",
+        description="Schadenskategorie – wähle den passenden Typ anhand des Dokuments",
     )
     objekt: Literal[
         "Hausrat",
@@ -136,69 +133,54 @@ class BasisSchaden(BaseModel):
         "Sonstiges",
     ] = Field(
         ...,
-        description="Wähle die Kategorie, die am besten zum beschädigten Objekt "
-        "basierend auf dem bereitgestellten Dokument passt. Wähle "
-        "'Sonstiges', falls keine der anderen Kategorien passt.",
+        description="Beschädigtes Objekt – wähle den passenden Bereich anhand des Dokuments",
     )
 
     @model_validator(mode="before")
     @classmethod
-    def validate_prediction(cls, data: dict[str, Any]) -> dict[str, Any]:
-        # Normalize the input: if the value is already an abbreviation, use it;
-        # otherwise convert from full name.
-        typ_value = data.get("typ")
-        objekt_value = data.get("objekt")
-        if typ_value in Mapper.typ_mapping:  # already abbreviation
-            typ_abbr = typ_value
-        else:
-            typ_abbr = Mapper.get_typ_abbreviation(typ_value)
-        if objekt_value in Mapper.object_mapping:
-            objekt_abbr = objekt_value
-        else:
-            objekt_abbr = Mapper.get_object_abbreviation(objekt_value)
-
-        # Define the allowed (objekt_abbr, typ_abbr) combinations.
-        valid_combinations = {
-            ("HR", "LW"),
-            ("HR", "ST"),
-            ("HR", "FE"),
-            ("HR", "EL"),
-            ("HR", "ED"),
-            ("HR", "GL"),
-            ("WG", "LW"),
-            ("WG", "ST"),
-            ("WG", "FE"),
-            ("WG", "EL"),
-            ("WG", "ED"),
-            ("WG", "GL"),
-            ("GL", "GL"),
-            ("KF", "VK"),
-            ("KF", "TK"),
-            ("KH", "KH"),
-            ("AH", "AH"),
-            ("AH", "HB"),
-            ("AH", "HY"),
-            ("AH", "BR"),
+    def validate_combination(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        allowed_combinations = {
+            ("Hausrat", "Leitungswasser"),
+            ("Hausrat", "Sturm"),
+            ("Hausrat", "Feuer"),
+            ("Hausrat", "Elementar"),
+            ("Hausrat", "Einbruch / Diebstahl"),
+            ("Hausrat", "Glass"),
+            ("Wohngebäude", "Leitungswasser"),
+            ("Wohngebäude", "Sturm"),
+            ("Wohngebäude", "Feuer"),
+            ("Wohngebäude", "Elementar"),
+            ("Wohngebäude", "Einbruch / Diebstahl"),
+            ("Wohngebäude", "Glass"),
+            ("Glass", "Glass"),
+            ("Kasko", "Vollkasko"),
+            ("Kasko", "Teilkasko"),
+            ("Kraftfahrthaftpflicht", "Kraftfahrthaftpflicht"),
+            ("Allgemeine Haftpflicht", "Allgemeine Haftpflicht"),
+            ("Allgemeine Haftpflicht", "Haeuslicher Bereich"),
+            ("Allgemeine Haftpflicht", "Handyschaden"),
+            ("Allgemeine Haftpflicht", "Brillenschaden"),
         }
-        if (objekt_abbr, typ_abbr) not in valid_combinations:
+
+        typ_val = data.get("typ")
+        objekt_val = data.get("objekt")
+        if (objekt_val, typ_val) not in allowed_combinations:
             raise ValueError("Invalid combination of typ and objekt")
         logger.info("Valid combination of typ and objekt")
-        logger.info("Mapping objekt and typ to full names")
-        # Convert abbreviations back to full names.
-        data["typ"] = Mapper.get_typ_full_name(typ_abbr)
-        data["objekt"] = Mapper.get_object_full_name(objekt_abbr)
         return data
 
 
-def get_prediction(client: instructor.client, doc: str) -> BasisSchaden | None:
+def get_prediction(
+    client: instructor.client, prompt: str, doc: str
+) -> BasisSchaden | None:
     try:
         pred = client.chat.completions.create(
             model="gpt-4o-mini",
             response_model=BasisSchaden,
             temperature=0,
-            max_retries=2,
+            max_retries=3,
             messages=[
-                {"role": "user", "content": simple_prompt},
+                {"role": "user", "content": prompt},
                 {"role": "user", "content": doc},
             ],
         )
@@ -221,7 +203,7 @@ if __name__ == "__main__":
         random_state=42,
     )
 
-    testset = df.tail(200).sample(10, random_state=42).reset_index(drop=True)
+    testset = df.tail(200).reset_index(drop=True)
 
     logger.info("Loading simple prompt from jinja template")
     env = Environment(loader=FileSystemLoader(here("./src/")))
@@ -233,7 +215,7 @@ if __name__ == "__main__":
 
     logger.info("Predicting on testset")
     predictions = [
-        get_prediction(client=client, doc=doc)
+        get_prediction(client=client, prompt=simple_prompt, doc=doc)
         for doc in testset["anonymized_text"]
     ]
 
@@ -242,12 +224,37 @@ if __name__ == "__main__":
         1
         for i, pred in enumerate(predictions)
         if pred is not None
-        and pred.typ
-        == Mapper.get_typ_abbreviation(testset.iloc[i]["sd_typ_kennung"])
-        and pred.objekt
-        == Mapper.get_object_abbreviation(testset.iloc[i]["schaden_objekt"])
+        and Mapper.get_typ_abbreviation(pred.typ)
+        == testset.iloc[i]["sd_typ_kennung"]
+        and Mapper.get_object_abbreviation(pred.objekt)
+        == testset.iloc[i]["schaden_objekt"]
     )
 
     total_predictions = len(predictions)
-    accuracy = correct_predictions / total_predictions
-    logger.info(f"Accuracy: {accuracy:.2f}")
+    old_accuracy = correct_predictions / total_predictions
+    logger.info(f"Accuracy: {old_accuracy:.2f}")
+
+    template = env.get_template("optimized_prompt.jinja")
+    optimized_prompt = template.render()
+
+    logger.info("Optimized Predicting on testset")
+    optimized_predictions = [
+        get_prediction(client=client, doc=doc, prompt=optimized_prompt)
+        for doc in testset["anonymized_text"]
+    ]
+
+    logger.info("Evaluating optimized predictions on the true labels")
+    correct_predictions = sum(
+        1
+        for i, pred in enumerate(optimized_predictions)
+        if pred is not None
+        and Mapper.get_typ_abbreviation(pred.typ)
+        == testset.iloc[i]["sd_typ_kennung"]
+        and Mapper.get_object_abbreviation(pred.objekt)
+        == testset.iloc[i]["schaden_objekt"]
+    )
+
+    total_predictions = len(optimized_predictions)
+    new_accuracy = correct_predictions / total_predictions
+    logger.info(f"Old Accuracy: {old_accuracy:.2f}")
+    logger.info(f"New Accuracy: {new_accuracy:.2f}")
